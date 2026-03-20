@@ -172,7 +172,7 @@ npx ruflo@latest init --wizard
 
 🧠 **Learns From Your Workflow** - The system remembers what works. Successful patterns are stored and reused, routing similar tasks to the best-performing agents. Gets smarter over time.
 
-🔌 **Works With Any LLM** - Switch between Claude, GPT, Gemini, Cohere, or local models like Llama. Automatic failover if one provider is unavailable. Smart routing picks the cheapest option that meets quality requirements.
+🔌 **Works With Any LLM** - Switch between Claude, GPT, Gemini, MiniMax, Cohere, or local models like Llama. Automatic failover if one provider is unavailable. Smart routing picks the cheapest option that meets quality requirements.
 
 ⚡ **Plugs Into Claude Code** - Native integration via MCP (Model Context Protocol). Use ruflo commands directly in your Claude Code sessions with full tool access.
 
@@ -194,7 +194,7 @@ Every request flows through four layers: from your CLI or Claude Code interface,
 | User | Claude Code, CLI | Your interface to control and run commands |
 | Orchestration | MCP Server, Router, Hooks | Routes requests to the right agents |
 | Agents | 60+ types | Specialized workers (coder, tester, reviewer...) |
-| Providers | Anthropic, OpenAI, Google, Ollama | AI models that power reasoning |
+| Providers | Anthropic, OpenAI, Google, MiniMax, Ollama | AI models that power reasoning |
 
 </details>
 
@@ -411,7 +411,7 @@ swarm_init({
 | **Task Routing** | You decide which agent to use | Intelligent routing based on learned patterns (89% accuracy) |
 | **Complex Tasks** | Manual breakdown required | Automatic decomposition across 5 domains (Security, Core, Integration, Support) |
 | **Background Workers** | Nothing runs automatically | 12 context-triggered workers auto-dispatch on file changes, patterns, sessions |
-| **LLM Provider** | Anthropic only | 6 providers with automatic failover and cost-based routing (85% savings) |
+| **LLM Provider** | Anthropic only | 7 providers with automatic failover and cost-based routing (85% savings) |
 | **Security** | Standard protections | CVE-hardened with bcrypt, input validation, path traversal prevention |
 | **Performance** | Baseline | Faster tasks via parallel swarm spawning and intelligent routing |
 
@@ -906,6 +906,7 @@ flowchart TB
         Anthropic[Anthropic]
         OpenAI[OpenAI]
         Google[Google]
+        MiniMax[MiniMax]
         Ollama[Ollama]
     end
 
@@ -1410,6 +1411,7 @@ All configurations support these environment variables:
 | `ANTHROPIC_API_KEY` | Your Anthropic API key | Yes (for Claude models) |
 | `OPENAI_API_KEY` | OpenAI API key | Optional (for GPT models) |
 | `GOOGLE_API_KEY` | Google AI API key | Optional (for Gemini) |
+| `MINIMAX_API_KEY` | MiniMax API key | Optional (for MiniMax-M2.7/M2.5) |
 | `CLAUDE_FLOW_LOG_LEVEL` | Logging level (debug, info, warn, error) | Optional |
 | `CLAUDE_FLOW_TOOL_GROUPS` | MCP tool groups to enable (comma-separated) | Optional |
 | `CLAUDE_FLOW_TOOL_MODE` | Preset tool mode (develop, pr-review, devops, etc.) | Optional |

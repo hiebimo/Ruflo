@@ -17,6 +17,7 @@ export type LLMProvider =
   | 'google'
   | 'cohere'
   | 'ollama'
+  | 'minimax'
   | 'ruvector'
   | 'openrouter'
   | 'litellm'
@@ -48,6 +49,11 @@ export type LLMModel =
   | 'command-r'
   | 'command-light'
   | 'command'
+  // MiniMax Models
+  | 'MiniMax-M2.7'
+  | 'MiniMax-M2.7-highspeed'
+  | 'MiniMax-M2.5'
+  | 'MiniMax-M2.5-highspeed'
   // Ollama (Local) Models
   | 'llama3.2'
   | 'llama3.1'

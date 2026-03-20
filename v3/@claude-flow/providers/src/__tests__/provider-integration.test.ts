@@ -19,6 +19,7 @@ import {
   GoogleProvider,
   OllamaProvider,
   RuVectorProvider,
+  MiniMaxProvider,
   ProviderManager,
   createProviderManager,
   LLMRequest,
@@ -159,6 +160,118 @@ describe('Provider Integration Tests', () => {
       console.log('Usage:', response.usage);
 
       expect(response.content).toBeTruthy();
+
+      provider.destroy();
+    }, 30000);
+  });
+
+  describe('MiniMax Provider', () => {
+    const apiKey = process.env.MINIMAX_API_KEY;
+
+    it.skipIf(!apiKey)('should complete request with MiniMax-M2.7', async () => {
+      const provider = new MiniMaxProvider({
+        config: {
+          provider: 'minimax',
+          apiKey,
+          model: 'MiniMax-M2.7',
+          maxTokens: 100,
+        },
+        logger: consoleLogger,
+      });
+
+      await provider.initialize();
+
+      const response = await provider.complete(createTestRequest('MiniMax-M2.7'));
+
+      console.log('MiniMax M2.7 Response:', response.content);
+      console.log('Usage:', response.usage);
+      console.log('Cost:', response.cost);
+
+      expect(response.content).toBeTruthy();
+      expect(response.provider).toBe('minimax');
+      expect(response.usage.totalTokens).toBeGreaterThan(0);
+
+      provider.destroy();
+    }, 30000);
+
+    it.skipIf(!apiKey)('should complete request with MiniMax-M2.5', async () => {
+      const provider = new MiniMaxProvider({
+        config: {
+          provider: 'minimax',
+          apiKey,
+          model: 'MiniMax-M2.5',
+          maxTokens: 100,
+        },
+        logger: consoleLogger,
+      });
+
+      await provider.initialize();
+
+      const response = await provider.complete(createTestRequest('MiniMax-M2.5'));
+
+      console.log('MiniMax M2.5 Response:', response.content);
+      console.log('Usage:', response.usage);
+      console.log('Cost:', response.cost);
+
+      expect(response.content).toBeTruthy();
+      expect(response.provider).toBe('minimax');
+      expect(response.usage.totalTokens).toBeGreaterThan(0);
+
+      provider.destroy();
+    }, 30000);
+
+    it.skipIf(!apiKey)('should stream response with M2.7', async () => {
+      const provider = new MiniMaxProvider({
+        config: {
+          provider: 'minimax',
+          apiKey,
+          model: 'MiniMax-M2.7',
+          maxTokens: 100,
+        },
+        logger: consoleLogger,
+      });
+
+      await provider.initialize();
+
+      const chunks: string[] = [];
+      for await (const event of provider.streamComplete(createTestRequest('MiniMax-M2.7'))) {
+        if (event.type === 'content' && event.delta?.content) {
+          chunks.push(event.delta.content);
+          process.stdout.write(event.delta.content);
+        }
+      }
+      console.log('\n');
+
+      expect(chunks.length).toBeGreaterThan(0);
+
+      provider.destroy();
+    }, 30000);
+
+    it.skipIf(!apiKey)('should list all supported models including M2.7', async () => {
+      const provider = new MiniMaxProvider({
+        config: {
+          provider: 'minimax',
+          apiKey,
+          model: 'MiniMax-M2.7',
+          maxTokens: 100,
+        },
+        logger: consoleLogger,
+      });
+
+      await provider.initialize();
+
+      const models = await provider.listModels();
+      expect(models).toContain('MiniMax-M2.7');
+      expect(models).toContain('MiniMax-M2.7-highspeed');
+      expect(models).toContain('MiniMax-M2.5');
+      expect(models).toContain('MiniMax-M2.5-highspeed');
+
+      const m27Info = await provider.getModelInfo('MiniMax-M2.7');
+      expect(m27Info.contextLength).toBe(1048576);
+      expect(m27Info.maxOutputTokens).toBe(131072);
+
+      const m25Info = await provider.getModelInfo('MiniMax-M2.5');
+      expect(m25Info.contextLength).toBe(204800);
 
       provider.destroy();
     }, 30000);
