@@ -8,6 +8,7 @@
  * - OpenAI (GPT-4o, o1, GPT-4, GPT-3.5)
  * - Google (Gemini 2.0, 1.5 Pro, Flash)
  * - Cohere (Command R+, R, Light)
+ * - MiniMax (MiniMax-M2.5, MiniMax-M2.5-highspeed)
  * - Ollama (Local: Llama, Mistral, CodeLlama, Phi)
  *
  * Features:
@@ -35,6 +36,7 @@ export { GoogleProvider } from './google-provider.js';
 export { CohereProvider } from './cohere-provider.js';
 export { OllamaProvider } from './ollama-provider.js';
 export { RuVectorProvider } from './ruvector-provider.js';
+export { MiniMaxProvider } from './minimax-provider.js';
 
 // Export provider manager
 export { ProviderManager, createProviderManager } from './provider-manager.js';
