@@ -16,6 +16,10 @@ author: Ruflo
 ## Installation
 
 ```bash
+# From GitHub (latest development)
+npm install -g github:openclaw/openclaw#main
+
+# From npm registry
 npm install -g openclaw@latest
 ```
 
