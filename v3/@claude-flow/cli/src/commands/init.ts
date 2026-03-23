@@ -182,7 +182,13 @@ const initAction = async (ctx: CommandContext): Promise<CommandResult> => {
   const onlyClaude = ctx.flags['only-claude'] as boolean;
   const codexMode = ctx.flags.codex as boolean;
   const dualMode = ctx.flags.dual as boolean;
+  const wizard = ctx.flags.wizard as boolean;
   const cwd = ctx.cwd;
+
+  // If --wizard flag, delegate to the wizard subcommand
+  if (wizard) {
+    return (await wizardCommand.action!(ctx)) ?? { success: true };
+  }
 
   // If codex mode, use the Codex initializer
   if (codexMode || dualMode) {
@@ -1006,6 +1012,13 @@ export const initCommand: Command = {
   subcommands: [wizardCommand, checkCommand, skillsCommand, hooksCommand, upgradeCommand],
   options: [
     {
+      name: 'wizard',
+      short: 'w',
+      description: 'Run interactive setup wizard',
+      type: 'boolean',
+      default: false,
+    },
+    {
       name: 'force',
       short: 'f',
       description: 'Overwrite existing configuration',
@@ -1085,6 +1098,7 @@ export const initCommand: Command = {
     { command: 'claude-flow init --only-claude', description: 'Only create Claude Code integration' },
     { command: 'claude-flow init --skip-claude', description: 'Only create V3 runtime' },
     { command: 'claude-flow init wizard', description: 'Interactive setup wizard' },
+    { command: 'claude-flow init --wizard', description: 'Interactive setup wizard (flag alias)' },
     { command: 'claude-flow init --with-embeddings', description: 'Initialize with ONNX embeddings' },
     { command: 'claude-flow init --with-embeddings --embedding-model all-mpnet-base-v2', description: 'Use larger embedding model' },
     { command: 'claude-flow init skills --all', description: 'Install all available skills' },
