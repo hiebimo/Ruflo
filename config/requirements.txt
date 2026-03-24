@@ -1,0 +1,3 @@
+# Receipt Expense Categorizer — Python dependencies
+anthropic>=0.40.0
+rich>=13.0.0
