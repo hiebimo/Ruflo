@@ -99,6 +99,22 @@
             "type": "command",
             "command": "node \"$CLAUDE_PROJECT_DIR/.claude/helpers/hook-handler.cjs\" session-end",
             "timeout": 10000
+          },
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/helpers/notify-channels.cjs\" session-end",
+            "timeout": 8000
+          }
+        ]
+      }
+    ],
+    "Notification": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/helpers/notify-channels.cjs\" notification",
+            "timeout": 8000
           }
         ]
       }
@@ -110,6 +126,11 @@
             "type": "command",
             "command": "node \"$CLAUDE_PROJECT_DIR/.claude/helpers/auto-memory-hook.mjs\" sync",
             "timeout": 10000
+          },
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/helpers/notify-channels.cjs\" stop",
+            "timeout": 8000
           }
         ]
       }
