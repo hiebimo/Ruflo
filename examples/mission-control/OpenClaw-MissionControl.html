@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenClaw — Mission Control v1.0</title>
+    <style>
+        :root {
+            --bmo-green:    #00ff88;
+            --bmo-dark:     #020e08;
+            --panel-bg:     rgba(0, 18, 10, 0.88);
+            --panel-border: rgba(0, 255, 136, 0.25);
+            --luffy-red:    #ff3333;
+            --zoro-green:   #22cc55;
+            --nami-orange:  #ff8c00;
+            --usopp-yellow: #ffcc00;
+            --sanji-blue:   #3399ff;
+            --chopper-pink: #ff77bb;
+            --robin-purple: #aa44ff;
+            --franky-cyan:  #00ccff;
+            --brook-white:  #ccccee;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: var(--bmo-dark);
+            color: var(--bmo-green);
+            font-family: 'Courier New', Courier, monospace;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* CRT scanlines overlay */
+        body::after {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent 0px,
+                transparent 3px,
+                rgba(0,255,136,0.012) 3px,
+                rgba(0,255,136,0.012) 4px
+            );
+            pointer-events: none;
+            z-index: 9999;
+        }
+
+        /* ── HEADER ── */
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 28px;
+            background: var(--panel-bg);
+            border-bottom: 1px solid var(--panel-border);
+            gap: 20px;
+        }
+
+        /* BMO face */
+        .bmo-wrap { display: flex; align-items: center; gap: 16px; }
+
+        .bmo-body {
+            width: 76px;
+            height: 86px;
+            background: #00c45a;
+            border-radius: 14px 14px 10px 10px;
+            border: 3px solid var(--bmo-green);
+            box-shadow: 0 0 22px rgba(0,255,136,0.5);
+            position: relative;
+            flex-shrink: 0;
+        }
+
+        .bmo-screen {
+            width: 54px;
+            height: 36px;
+            background: #001208;
+            border: 2px solid #005533;
+            border-radius: 4px;
+            position: absolute;
+            top: 9px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .bmo-eye-row {
+            display: flex;
+            gap: 12px;
+            position: absolute;
+            top: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .bmo-eye {
+            width: 11px;
+            height: 11px;
+            background: #001208;
+            border-radius: 50%;
+            border: 2px solid var(--bmo-green);
+        }
+
+        .bmo-eye::after {
+            content: '';
+            display: block;
+            width: 4px;
+            height: 4px;
+            background: var(--bmo-green);
+            border-radius: 50%;
+            margin: 2px 0 0 2px;
+            animation: blink 5s ease-in-out infinite;
+        }
+
+        @keyframes blink {
+            0%, 88%, 100% { opacity: 1; }
+            92%            { opacity: 0; }
+        }
+
+        .bmo-mouth {
+            width: 22px;
+            height: 7px;
+            border: 2px solid #005533;
+            border-top: none;
+            border-radius: 0 0 11px 11px;
+            position: absolute;
+            bottom: 19px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .bmo-btns {
+            display: flex;
+            gap: 5px;
+            position: absolute;
+            bottom: 7px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .bmo-btn { width: 9px; height: 9px; border-radius: 50%; }
+
+        .bmo-label h1 {
+            font-size: 1.35em;
+            font-weight: bold;
+            color: var(--bmo-green);
+            text-shadow: 0 0 12px var(--bmo-green);
+            letter-spacing: 1px;
+        }
+
+        .bmo-label .sub {
+            font-size: 0.7em;
+            color: rgba(0,255,136,0.55);
+            margin-top: 3px;
+            letter-spacing: 0.5px;
+        }
+
+        /* Stats row */
+        .stats-row { display: flex; gap: 28px; align-items: center; }
+
+        .stat { text-align: center; }
+
+        .stat-val {
+            font-size: 1.9em;
+            font-weight: bold;
+            color: var(--bmo-green);
+            text-shadow: 0 0 10px var(--bmo-green);
+            line-height: 1;
+        }
+
+        .stat-lbl {
+            font-size: 0.6em;
+            color: rgba(0,255,136,0.45);
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin-top: 3px;
+        }
+
+        .clock-box { text-align: right; font-size: 0.75em; color: rgba(0,255,136,0.5); }
+
+        /* ── TICKER ── */
+        .ticker {
+            background: rgba(0,255,136,0.07);
+            border-bottom: 1px solid var(--panel-border);
+            padding: 5px 0;
+            overflow: hidden;
+            white-space: nowrap;
+        }
+
+        .ticker span {
+            display: inline-block;
+            animation: scroll 40s linear infinite;
+            font-size: 0.72em;
+            color: rgba(0,255,136,0.65);
+            padding-left: 100%;
+        }
+
+        @keyframes scroll {
+            from { transform: translateX(0); }
+            to   { transform: translateX(-100%); }
+        }
+
+        /* ── CREW FILTER BAR ── */
+        .filter-bar {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 28px;
+            background: rgba(0,10,5,0.7);
+            border-bottom: 1px solid var(--panel-border);
+            flex-wrap: wrap;
+        }
+
+        .filter-label {
+            font-size: 0.65em;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: rgba(0,255,136,0.35);
+            flex-shrink: 0;
+        }
+
+        .tag {
+            padding: 3px 12px;
+            border-radius: 20px;
+            font-size: 0.68em;
+            border: 1px solid;
+            cursor: pointer;
+            transition: background 0.2s, box-shadow 0.2s;
+            user-select: none;
+        }
+
+        .tag:hover, .tag.on {
+            background: rgba(255,255,255,0.08);
+            box-shadow: 0 0 8px currentColor;
+        }
+
+        /* ── MAIN LAYOUT ── */
+        .layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            grid-template-rows: auto auto;
+            gap: 18px;
+            padding: 18px 28px;
+        }
+
+        /* ── AGENT GRID ── */
+        .agent-grid {
+            grid-column: 1 / 3;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 13px;
+        }
+
+        .card {
+            background: var(--panel-bg);
+            border: 1px solid var(--panel-border);
+            border-radius: 10px;
+            padding: 13px;
+            position: relative;
+            transition: transform 0.18s, box-shadow 0.18s;
+            cursor: default;
+        }
+
+        .card:hover {
+            transform: translateY(-3px);
+        }
+
+        .status-dot {
+            position: absolute;
+            top: 11px;
+            right: 11px;
+            width: 9px;
+            height: 9px;
+            border-radius: 50%;
+        }
+
+        .dot-active { animation: dpulse 2s ease-in-out infinite; }
+        .dot-busy   { animation: dpulse 0.9s ease-in-out infinite; }
+
+        @keyframes dpulse {
+            0%, 100% { opacity: 1; }
+            50%       { opacity: 0.3; }
+        }
+
+        .card-head {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 9px;
+        }
+
+        .avatar {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            border: 2px solid;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 19px;
+            flex-shrink: 0;
+        }
+
+        .card-name { font-size: 0.82em; font-weight: bold; }
+        .card-role { font-size: 0.62em; opacity: 0.55; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 1px; }
+
+        .card-task {
+            font-size: 0.68em;
+            color: rgba(0,255,136,0.55);
+            background: rgba(0,0,0,0.35);
+            border-radius: 4px;
+            padding: 5px 8px;
+            min-height: 26px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .card-metrics {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 8px;
+        }
+
+        .m-val { font-size: 0.88em; font-weight: bold; text-align: center; }
+        .m-lbl { font-size: 0.52em; opacity: 0.45; text-transform: uppercase; text-align: center; }
+
+        /* ── RIGHT PANEL ── */
+        .right-col {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .panel {
+            background: var(--panel-bg);
+            border: 1px solid var(--panel-border);
+            border-radius: 10px;
+            padding: 15px;
+        }
+
+        .panel-title {
+            font-size: 0.67em;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: rgba(0,255,136,0.45);
+            border-bottom: 1px solid var(--panel-border);
+            padding-bottom: 7px;
+            margin-bottom: 11px;
+        }
+
+        /* Feed */
+        .feed-row {
+            display: flex;
+            gap: 9px;
+            padding: 5px 0;
+            border-bottom: 1px solid rgba(0,255,136,0.07);
+            font-size: 0.7em;
+        }
+
+        .feed-ts  { color: rgba(0,255,136,0.35); flex-shrink: 0; width: 44px; }
+        .feed-txt { color: rgba(0,255,136,0.78); }
+        .feed-txt b { font-weight: bold; }
+
+        /* Mission bars */
+        .mission { margin-bottom: 11px; }
+        .mission-lbl {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.69em;
+            margin-bottom: 4px;
+        }
+
+        .bar-track {
+            height: 4px;
+            background: rgba(0,255,136,0.12);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .bar-fill {
+            height: 100%;
+            border-radius: 2px;
+            transition: width 1.2s ease;
+        }
+
+        /* ── BOTTOM LOG ── */
+        .log-panel {
+            grid-column: 1 / 4;
+            background: var(--panel-bg);
+            border: 1px solid var(--panel-border);
+            border-radius: 10px;
+            padding: 14px;
+            max-height: 155px;
+            overflow-y: auto;
+        }
+
+        .log-row {
+            display: flex;
+            gap: 12px;
+            padding: 3px 0;
+            border-bottom: 1px solid rgba(0,255,136,0.05);
+            font-size: 0.7em;
+        }
+
+        .log-ts    { color: rgba(0,255,136,0.3); flex-shrink: 0; width: 68px; }
+        .log-agent { flex-shrink: 0; width: 78px; font-weight: bold; }
+        .log-msg   { color: rgba(0,255,136,0.72); }
+
+        /* scrollbar */
+        ::-webkit-scrollbar { width: 3px; }
+        ::-webkit-scrollbar-thumb { background: rgba(0,255,136,0.25); border-radius: 2px; }
+
+        /* colour helpers */
+        .c-luffy   { color: var(--luffy-red);    }
+        .c-zoro    { color: var(--zoro-green);   }
+        .c-nami    { color: var(--nami-orange);  }
+        .c-usopp   { color: var(--usopp-yellow); }
+        .c-sanji   { color: var(--sanji-blue);   }
+        .c-chopper { color: var(--chopper-pink); }
+        .c-robin   { color: var(--robin-purple); }
+        .c-franky  { color: var(--franky-cyan);  }
+        .c-brook   { color: var(--brook-white);  }
+        .c-bmo     { color: var(--bmo-green);    }
+    </style>
+</head>
+<body>
+
+<!-- ══════════════ HEADER ══════════════ -->
+<header class="header">
+
+    <div class="bmo-wrap">
+        <div class="bmo-body">
+            <div class="bmo-screen">
+                <span style="font-size:8px;color:var(--bmo-green);animation:blink 3s infinite">▶ RUN</span>
+            </div>
+            <div class="bmo-eye-row">
+                <div class="bmo-eye"></div>
+                <div class="bmo-eye"></div>
+            </div>
+            <div class="bmo-mouth"></div>
+            <div class="bmo-btns">
+                <div class="bmo-btn" style="background:#ff4466"></div>
+                <div class="bmo-btn" style="background:#ffcc00"></div>
+                <div class="bmo-btn" style="background:#00ff88"></div>
+            </div>
+        </div>
+        <div class="bmo-label">
+            <h1>BMO // SUPREME COMMAND</h1>
+            <div class="sub">OpenClaw Mission Control v1.0 &nbsp;·&nbsp; Straw Hat Fleet Online</div>
+        </div>
+    </div>
+
+    <div class="stats-row">
+        <div class="stat"><div class="stat-val" id="sAgents">9</div><div class="stat-lbl">Agents Active</div></div>
+        <div class="stat"><div class="stat-val" id="sTasks">23</div><div class="stat-lbl">Tasks Running</div></div>
+        <div class="stat"><div class="stat-val" id="sRate">97%</div><div class="stat-lbl">Success Rate</div></div>
+        <div class="stat"><div class="stat-val" id="sUptime">00:00:00</div><div class="stat-lbl">Uptime</div></div>
+    </div>
+
+    <div class="clock-box" id="clock">--:--:--<br>---</div>
+
+</header>
+
+<!-- ══════════════ TICKER ══════════════ -->
+<div class="ticker">
+    <span>
+        &nbsp;&nbsp;&nbsp;
+        [BMO] All hands on deck — Straw Hat Fleet fully operational ·
+        [LUFFY] Gum-Gum swarm: 6-agent coordination active ·
+        [ZORO] Three-sword security scan: 0 critical CVEs ·
+        [NAMI] Navigation optimised — 99.2% routing efficiency ·
+        [USOPP] Sniper recon: 3 new API patterns discovered ·
+        [SANJI] Diable Jambe: query throughput +2.4× ·
+        [CHOPPER] HNSW memory index healthy — 4.2M vectors ·
+        [ROBIN] Poneglyph deciphered: schema v3 analysis 45% ·
+        [FRANKY] SUPER! Build pipeline 87% complete ·
+        [BROOK] Yohohoho~ 209 async messages delivered ·
+        &nbsp;&nbsp;&nbsp;
+    </span>
+</div>
+
+<!-- ══════════════ CREW FILTER ══════════════ -->
+<div class="filter-bar">
+    <span class="filter-label">Crew:</span>
+    <span class="tag on c-bmo"   style="border-color:var(--bmo-green)"   onclick="filter(this,'all')">All Hands</span>
+    <span class="tag c-luffy"    style="border-color:var(--luffy-red)"   onclick="filter(this,'luffy')">Luffy</span>
+    <span class="tag c-zoro"     style="border-color:var(--zoro-green)"  onclick="filter(this,'zoro')">Zoro</span>
+    <span class="tag c-nami"     style="border-color:var(--nami-orange)" onclick="filter(this,'nami')">Nami</span>
+    <span class="tag c-usopp"    style="border-color:var(--usopp-yellow)"onclick="filter(this,'usopp')">Usopp</span>
+    <span class="tag c-sanji"    style="border-color:var(--sanji-blue)"  onclick="filter(this,'sanji')">Sanji</span>
+    <span class="tag c-chopper"  style="border-color:var(--chopper-pink)"onclick="filter(this,'chopper')">Chopper</span>
+    <span class="tag c-robin"    style="border-color:var(--robin-purple)"onclick="filter(this,'robin')">Robin</span>
+    <span class="tag c-franky"   style="border-color:var(--franky-cyan)" onclick="filter(this,'franky')">Franky</span>
+    <span class="tag c-brook"    style="border-color:var(--brook-white)" onclick="filter(this,'brook')">Brook</span>
+</div>
+
+<!-- ══════════════ MAIN LAYOUT ══════════════ -->
+<div class="layout">
+
+    <!-- ── Agent Cards ── -->
+    <div class="agent-grid">
+
+        <!-- LUFFY -->
+        <div class="card" data-crew="luffy" style="border-color:var(--luffy-red);box-shadow:0 0 14px rgba(255,51,51,0.18)">
+            <div class="status-dot dot-busy" style="background:var(--luffy-red)"></div>
+            <div class="card-head">
+                <div class="avatar c-luffy" style="border-color:var(--luffy-red);box-shadow:0 0 8px var(--luffy-red)">🏴‍☠️</div>
+                <div><div class="card-name c-luffy">Monkey D. Luffy</div><div class="card-role">Commander · Orchestrator</div></div>
+            </div>
+            <div class="card-task">Coordinating 6-agent swarm: Grand Line API v3</div>
+            <div class="card-metrics">
+                <div><div class="m-val c-luffy">12</div><div class="m-lbl">Tasks</div></div>
+                <div><div class="m-val c-luffy">100%</div><div class="m-lbl">Will</div></div>
+                <div><div class="m-val c-luffy">2.1s</div><div class="m-lbl">Resp</div></div>
+            </div>
+        </div>
+
+        <!-- ZORO -->
+        <div class="card" data-crew="zoro" style="border-color:var(--zoro-green);box-shadow:0 0 14px rgba(34,204,85,0.15)">
+            <div class="status-dot dot-active" style="background:var(--zoro-green)"></div>
+            <div class="card-head">
+                <div class="avatar c-zoro" style="border-color:var(--zoro-green);box-shadow:0 0 8px var(--zoro-green)">⚔️</div>
+                <div><div class="card-name c-zoro">Roronoa Zoro</div><div class="card-role">Security · Three-Sword Style</div></div>
+            </div>
+            <div class="card-task">CVE scan complete — 0 critical threats detected</div>
+            <div class="card-metrics">
+                <div><div class="m-val c-zoro">3</div><div class="m-lbl">Scans</div></div>
+                <div><div class="m-val c-zoro">0</div><div class="m-lbl">Threats</div></div>
+                <div><div class="m-val c-zoro">0.8s</div><div class="m-lbl">Resp</div></div>
+            </div>
+        </div>
+
+        <!-- NAMI -->
+        <div class="card" data-crew="nami" style="border-color:var(--nami-orange);box-shadow:0 0 14px rgba(255,140,0,0.15)">
+            <div class="status-dot dot-busy" style="background:var(--nami-orange)"></div>
+            <div class="card-head">
+                <div class="avatar c-nami" style="border-color:var(--nami-orange);box-shadow:0 0 8px var(--nami-orange)">🗺️</div>
+                <div><div class="card-name c-nami">Nami</div><div class="card-role">Navigator · Planner</div></div>
+            </div>
+            <div class="card-task">Charting optimal task execution route</div>
+            <div class="card-metrics">
+                <div><div class="m-val c-nami">7</div><div class="m-lbl">Routes</div></div>
+                <div><div class="m-val c-nami">99%</div><div class="m-lbl">Acc.</div></div>
+                <div><div class="m-val c-nami">1.2s</div><div class="m-lbl">Resp</div></div>
+            </div>
+        </div>
+
+        <!-- USOPP -->
+        <div class="card" data-crew="usopp" style="border-color:var(--usopp-yellow);box-shadow:0 0 14px rgba(255,204,0,0.13)">
+            <div class="status-dot dot-active" style="background:var(--usopp-yellow)"></div>
+            <div class="card-head">
+                <div class="avatar c-usopp" style="border-color:var(--usopp-yellow);box-shadow:0 0 8px var(--usopp-yellow)">🎯</div>
+                <div><div class="card-name c-usopp">Usopp</div><div class="card-role">Researcher · Scout</div></div>
+            </div>
+            <div class="card-task">Pop Green recon: 3 new API patterns logged</div>
+            <div class="card-metrics">
+                <div><div class="m-val c-usopp">18</div><div class="m-lbl">Found</div></div>
+                <div><div class="m-val c-usopp">92%</div><div class="m-lbl">Conf.</div></div>
+                <div><div class="m-val c-usopp">3.4s</div><div class="m-lbl">Resp</div></div>
+            </div>
+        </div>
+
+        <!-- SANJI -->
+        <div class="card" data-crew="sanji" style="border-color:var(--sanji-blue);box-shadow:0 0 14px rgba(51,153,255,0.15)">
+            <div class="status-dot dot-busy" style="background:var(--sanji-blue)"></div>
+            <div class="card-head">
+                <div class="avatar c-sanji" style="border-color:var(--sanji-blue);box-shadow:0 0 8px var(--sanji-blue)">🔥</div>
+                <div><div class="card-name c-sanji">Sanji</div><div class="card-role">Optimizer · Performance</div></div>
+            </div>
+            <div class="card-task">Diable Jambe: hot-optimising query pipeline</div>
+            <div class="card-metrics">
+                <div><div class="m-val c-sanji">2.4×</div><div class="m-lbl">Speed</div></div>
+                <div><div class="m-val c-sanji">847</div><div class="m-lbl">Calls</div></div>
+                <div><div class="m-val c-sanji">0.3s</div><div class="m-lbl">Resp</div></div>
+            </div>
+        </div>
+
+        <!-- CHOPPER -->
+        <div class="card" data-crew="chopper" style="border-color:var(--chopper-pink);box-shadow:0 0 14px rgba(255,119,187,0.13)">
+            <div class="status-dot dot-active" style="background:var(--chopper-pink)"></div>
+            <div class="card-head">
+                <div class="avatar c-chopper" style="border-color:var(--chopper-pink);box-shadow:0 0 8px var(--chopper-pink)">🦌</div>
+                <div><div class="card-name c-chopper">Tony Tony Chopper</div><div class="card-role">Memory · Healer</div></div>
+            </div>
+            <div class="card-task">HNSW index healthy — 4.2M vectors, 12,400× speed</div>
+            <div class="card-metrics">
+                <div><div class="m-val c-chopper">4.2M</div><div class="m-lbl">Vecs</div></div>
+                <div><div class="m-val c-chopper">100%</div><div class="m-lbl">Health</div></div>
+                <div><div class="m-val c-chopper">0.1s</div><div class="m-lbl">Resp</div></div>
+            </div>
+        </div>
+
+        <!-- ROBIN -->
+        <div class="card" data-crew="robin" style="border-color:var(--robin-purple);box-shadow:0 0 14px rgba(170,68,255,0.15)">
+            <div class="status-dot dot-busy" style="background:var(--robin-purple)"></div>
+            <div class="card-head">
+                <div class="avatar c-robin" style="border-color:var(--robin-purple);box-shadow:0 0 8px var(--robin-purple)">🌸</div>
+                <div><div class="card-name c-robin">Nico Robin</div><div class="card-role">Analyst · Archaeologist</div></div>
+            </div>
+            <div class="card-task">Deciphering Poneglyph: DB schema v3 analysis</div>
+            <div class="card-metrics">
+                <div><div class="m-val c-robin">3</div><div class="m-lbl">Schemas</div></div>
+                <div><div class="m-val c-robin">98%</div><div class="m-lbl">Depth</div></div>
+                <div><div class="m-val c-robin">1.9s</div><div class="m-lbl">Resp</div></div>
+            </div>
+        </div>
+
+        <!-- FRANKY -->
+        <div class="card" data-crew="franky" style="border-color:var(--franky-cyan);box-shadow:0 0 14px rgba(0,204,255,0.15)">
+            <div class="status-dot dot-busy" style="background:var(--franky-cyan)"></div>
+            <div class="card-head">
+                <div class="avatar c-franky" style="border-color:var(--franky-cyan);box-shadow:0 0 8px var(--franky-cyan)">🔧</div>
+                <div><div class="card-name c-franky">Franky</div><div class="card-role">Builder · Coder</div></div>
+            </div>
+            <div class="card-task">SUPER! Build pipeline: compiling v3 CLI — 87%</div>
+            <div class="card-metrics">
+                <div><div class="m-val c-franky">87%</div><div class="m-lbl">Build</div></div>
+                <div><div class="m-val c-franky">24</div><div class="m-lbl">Files</div></div>
+                <div><div class="m-val c-franky">2.8s</div><div class="m-lbl">Resp</div></div>
+            </div>
+        </div>
+
+        <!-- BROOK -->
+        <div class="card" data-crew="brook" style="border-color:var(--brook-white);box-shadow:0 0 14px rgba(204,204,238,0.1)">
+            <div class="status-dot dot-active" style="background:var(--brook-white)"></div>
+            <div class="card-head">
+                <div class="avatar c-brook" style="border-color:var(--brook-white);box-shadow:0 0 8px var(--brook-white)">💀</div>
+                <div><div class="card-name c-brook">Brook</div><div class="card-role">Comms · Writer</div></div>
+            </div>
+            <div class="card-task">Yohohoho~ 209 async messages delivered</div>
+            <div class="card-metrics">
+                <div><div class="m-val c-brook">209</div><div class="m-lbl">Msgs</div></div>
+                <div><div class="m-val c-brook">100%</div><div class="m-lbl">Deliv.</div></div>
+                <div><div class="m-val c-brook">0.2s</div><div class="m-lbl">Resp</div></div>
+            </div>
+        </div>
+
+    </div><!-- /agent-grid -->
+
+    <!-- ── Right Column ── -->
+    <div class="right-col">
+
+        <!-- Live Activity Feed -->
+        <div class="panel">
+            <div class="panel-title">Live Activity Feed</div>
+            <div id="feed"></div>
+        </div>
+
+        <!-- Mission Progress -->
+        <div class="panel">
+            <div class="panel-title">Mission Progress</div>
+
+            <div class="mission">
+                <div class="mission-lbl"><span class="c-luffy">Grand Line API v3</span><span>74%</span></div>
+                <div class="bar-track"><div class="bar-fill" id="b1" style="width:74%;background:var(--luffy-red)"></div></div>
+            </div>
+            <div class="mission">
+                <div class="mission-lbl"><span class="c-franky">CLI Build Pipeline</span><span>87%</span></div>
+                <div class="bar-track"><div class="bar-fill" id="b2" style="width:87%;background:var(--franky-cyan)"></div></div>
+            </div>
+            <div class="mission">
+                <div class="mission-lbl"><span class="c-robin">Schema Analysis</span><span id="b3pct">45%</span></div>
+                <div class="bar-track"><div class="bar-fill" id="b3" style="width:45%;background:var(--robin-purple)"></div></div>
+            </div>
+            <div class="mission">
+                <div class="mission-lbl"><span class="c-zoro">Security Audit</span><span>100%</span></div>
+                <div class="bar-track"><div class="bar-fill" style="width:100%;background:var(--zoro-green)"></div></div>
+            </div>
+            <div class="mission">
+                <div class="mission-lbl"><span class="c-sanji">Perf Optimisation</span><span id="b4pct">62%</span></div>
+                <div class="bar-track"><div class="bar-fill" id="b4" style="width:62%;background:var(--sanji-blue)"></div></div>
+            </div>
+        </div>
+
+    </div><!-- /right-col -->
+
+    <!-- ── Bottom Log ── -->
+    <div class="log-panel">
+        <div class="panel-title" style="margin-bottom:8px">System Log — Straw Hat Fleet Command</div>
+        <div id="log"></div>
+    </div>
+
+</div><!-- /layout -->
+
+<script>
+'use strict';
+
+/* ── Clock ── */
+function tick() {
+    const n = new Date();
+    document.getElementById('clock').innerHTML =
+        n.toLocaleTimeString('en-US', {hour12:false}) + '<br>' +
+        n.toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'});
+}
+setInterval(tick, 1000); tick();
+
+/* ── Uptime ── */
+let upSec = 0;
+setInterval(() => {
+    upSec++;
+    const h = String(Math.floor(upSec / 3600)).padStart(2,'0');
+    const m = String(Math.floor((upSec % 3600) / 60)).padStart(2,'0');
+    const s = String(upSec % 60).padStart(2,'0');
+    document.getElementById('sUptime').textContent = `${h}:${m}:${s}`;
+}, 1000);
+
+/* ── Task counter drift ── */
+let tasks = 23;
+setInterval(() => {
+    if (Math.random() > 0.65) {
+        tasks = Math.max(18, Math.min(32, tasks + (Math.random() > 0.5 ? 1 : -1)));
+        document.getElementById('sTasks').textContent = tasks;
+    }
+}, 4000);
+
+/* ── Activity feed ── */
+const FEED_DATA = [
+    { ts:'00:04', color:'var(--franky-cyan)',  agent:'FRANKY',  msg:'Compilation step 25/28 — she\'s almost SUPER!' },
+    { ts:'00:03', color:'var(--robin-purple)', agent:'ROBIN',   msg:'Poneglyph segment decoded: auth-token schema' },
+    { ts:'00:02', color:'var(--sanji-blue)',   agent:'SANJI',   msg:'Query latency -2.4× — c\'est magnifique!' },
+    { ts:'00:01', color:'var(--zoro-green)',   agent:'ZORO',    msg:'Audit complete. Nothing to cut here.' },
+    { ts:'00:00', color:'var(--nami-orange)',  agent:'NAMI',    msg:'Route updated: 2 redundant hops eliminated' },
+];
+
+const feedEl = document.getElementById('feed');
+FEED_DATA.forEach(f => {
+    const d = document.createElement('div');
+    d.className = 'feed-row';
+    d.innerHTML = `<span class="feed-ts">${f.ts}</span>
+                   <span class="feed-txt"><b style="color:${f.color}">[${f.agent}]</b> ${f.msg}</span>`;
+    feedEl.appendChild(d);
+});
+
+/* ── System log ── */
+const LOG_DATA = [
+    { ts:'00:00:14', agent:'BMO',    cls:'c-bmo',    msg:'All systems nominal. Straw Hat Fleet ready.' },
+    { ts:'00:00:11', agent:'LUFFY',  cls:'c-luffy',  msg:'Spawning sub-swarm: 3 workers for Grand Line API v3' },
+    { ts:'00:00:08', agent:'CHOPPER',cls:'c-chopper',msg:'HNSW index rebuilt — 4.2M vectors, 12,400× search speed' },
+    { ts:'00:00:05', agent:'FRANKY', cls:'c-franky', msg:'Build step 22/28 done — TypeScript compilation OK' },
+    { ts:'00:00:03', agent:'BROOK',  cls:'c-brook',  msg:'Message queue flushed — 209 deliveries. Yohohoho!' },
+    { ts:'00:00:01', agent:'ZORO',   cls:'c-zoro',   msg:'Security scan pass — zero vulnerabilities' },
+    { ts:'00:00:00', agent:'USOPP',  cls:'c-usopp',  msg:'3 API patterns discovered, stored to memory namespace' },
+    { ts:'00:00:00', agent:'ROBIN',  cls:'c-robin',  msg:'Schema analysis initiated: Grand Line DB v3' },
+    { ts:'00:00:00', agent:'NAMI',   cls:'c-nami',   msg:'Navigation recalculated: 2 blocked pipelines rerouted' },
+    { ts:'00:00:00', agent:'SANJI',  cls:'c-sanji',  msg:'Perf target hit: 2.4× throughput improvement achieved' },
+    { ts:'00:00:00', agent:'BMO',    cls:'c-bmo',    msg:'Session start — all crew assembled and operational' },
+];
+
+const logEl = document.getElementById('log');
+LOG_DATA.forEach(l => {
+    const d = document.createElement('div');
+    d.className = 'log-row';
+    d.innerHTML = `<span class="log-ts">${l.ts}</span>
+                   <span class="log-agent ${l.cls}">[${l.agent}]</span>
+                   <span class="log-msg">${l.msg}</span>`;
+    logEl.appendChild(d);
+});
+
+/* ── Animate progress bars slowly ── */
+let b3 = 45, b4 = 62;
+setInterval(() => {
+    if (b3 < 99) {
+        b3 = Math.min(99, b3 + (Math.random() * 0.4));
+        document.getElementById('b3').style.width = b3.toFixed(1) + '%';
+        document.getElementById('b3pct').textContent = b3.toFixed(0) + '%';
+    }
+    if (b4 < 99) {
+        b4 = Math.min(99, b4 + (Math.random() * 0.6));
+        document.getElementById('b4').style.width = b4.toFixed(1) + '%';
+        document.getElementById('b4pct').textContent = b4.toFixed(0) + '%';
+    }
+}, 1500);
+
+/* ── Crew filter ── */
+function filter(el, crew) {
+    document.querySelectorAll('.tag').forEach(t => t.classList.remove('on'));
+    el.classList.add('on');
+    document.querySelectorAll('.card').forEach(c => {
+        c.style.display = (crew === 'all' || c.dataset.crew === crew) ? '' : 'none';
+    });
+}
+</script>
+</body>
+</html>
